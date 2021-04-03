@@ -476,4 +476,6 @@ int main(int argc, char **argv)
 	cout << "*********************************************************\n";
 	cout << "**** SIMULATION COMPLETED SUCCESSFULLY - END OF RUN! ****\n";
 	cout << "*********************************************************\n\n";
+
+	getchar();
 }
