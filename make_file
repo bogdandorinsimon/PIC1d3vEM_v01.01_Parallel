@@ -1,0 +1,21 @@
+CC=g++
+
+mainprog.exe: mainprog.o bfield.o efield.o rngs.o rvgs.o mover.o current.o energy.o
+	$(CC) -o mainprog.exe mainprog.o bfield.o efield.o rngs.o rvgs.o mover.o current.o energy.o
+mainprog.o: mainprog.cpp
+	$(CC) -c mainprog.cpp
+bfield.o: func/bfield.cpp
+	$(CC) -c func/bfield.cpp	
+efield.o: func/efield.cpp
+	$(CC) -c func/efield.cpp
+rngs.o: utils/rngs.c
+	$(CC) -c utils/rngs.c
+rvgs.o: utils/rvgs.c
+	$(CC) -c utils/rvgs.c	
+mover.o: func/mover.cpp
+	$(CC) -c func/mover.cpp
+current.o: func/current.cpp
+	$(CC) -c func/current.cpp		
+energy.o: func/energy.cpp
+	$(CC) -c func/energy.cpp	
+	
