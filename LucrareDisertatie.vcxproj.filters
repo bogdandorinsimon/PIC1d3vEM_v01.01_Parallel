@@ -53,5 +53,13 @@
     <ClInclude Include="utils\rvgs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="parallel_func\parallel.cuh">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="parallel_func\bfield.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>
