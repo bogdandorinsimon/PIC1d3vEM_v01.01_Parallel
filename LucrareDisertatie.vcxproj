@@ -98,6 +98,15 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <CudaCompile>
+      <CodeGeneration>compute_50,sm_50</CodeGeneration>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
+      <AdditionalCompilerOptions>
+      </AdditionalCompilerOptions>
+      <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
+    </CudaCompile>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="func\bfield.cpp" />
     <ClCompile Include="func\current.cpp" />
@@ -113,6 +122,9 @@
     <ClInclude Include="utils\nr3.h" />
     <ClInclude Include="utils\rngs.h" />
     <ClInclude Include="utils\rvgs.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="bfield.cu" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
