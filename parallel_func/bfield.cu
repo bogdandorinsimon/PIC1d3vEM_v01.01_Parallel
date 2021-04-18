@@ -1,9 +1,8 @@
 ﻿#include <stdio.h>
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
-#include "./utils/nr3.h"
 
-__global__ void bfieldKernel(double* by, double* bz, double* ey, double* ez, int m, double c) {
+__global__ void bfieldKernel(double *by, double *bz, double *ey, double *ez, int m, double c) {
 	int i = threadIdx.x;
 
 	if (i < 3 || i > m - 3) {
@@ -37,15 +36,15 @@ __global__ void bfieldKernel(double* by, double* bz, double* ey, double* ez, int
 	}
 }
 
-cudaError_t bfieldWithCuda(double* h_by, double* h_bz, double* h_ey, double* h_ez, int m, double c) {
-	double* d_by, * d_bz, * d_ey, * d_ez;
+cudaError_t bfieldWithCuda(double *h_by, double *h_bz, double *h_ey, double *h_ez, int m, double c) {
+	double *d_by, *d_bz, *d_ey, *d_ez;
 	cudaError_t cudaStatus;
 
 	const unsigned ARRAY_BITES = m * sizeof(double);
-	cudaMalloc((void**)&d_by, ARRAY_BITES);
-	cudaMalloc((void**)&d_bz, ARRAY_BITES);
-	cudaMalloc((void**)&d_ey, ARRAY_BITES);
-	cudaMalloc((void**)&d_ez, ARRAY_BITES);
+	cudaMalloc((void**) &d_by, ARRAY_BITES);
+	cudaMalloc((void**) &d_bz, ARRAY_BITES);
+	cudaMalloc((void**) &d_ey, ARRAY_BITES);
+	cudaMalloc((void**) &d_ez, ARRAY_BITES);
 
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {
@@ -64,7 +63,7 @@ cudaError_t bfieldWithCuda(double* h_by, double* h_bz, double* h_ey, double* h_e
 		goto Error;
 	}
 
-	bfieldKernel << <1, m >> > (d_by, d_bz, d_ey, d_ez, m, c);
+	bfieldKernel<<<1, m>>>(d_by, d_bz, d_ey, d_ez, m, c);
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "bfieldWithCuda: bfieldKernel failed: %s\n", cudaGetErrorString(cudaStatus));

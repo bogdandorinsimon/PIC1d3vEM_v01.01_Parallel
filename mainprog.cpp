@@ -13,6 +13,7 @@
 #include "utils/myutils.h"
 #include "utils/rngs.h"
 #include "utils/rvgs.h"
+#include "parallel_func/parallel.cuh"
 
 using namespace std;
 
@@ -29,6 +30,8 @@ int main(int argc, char **argv)
 	VecDoub x(1), vx(1), vy(1), vz(1), ex(1), ey(1), ez(1), by(1), bz(1), jxe(1), jye(1), jze(1), jxi(1), jyi(1), jzi(1), \
 	        etaK_ALL(1), etaE_ALL(1), etaB_ALL(1);
 	
+	cudaError_t cudaStatus;
+
 	// measure the time when simulation starts
 	timeCPU_START=clock();
 	
@@ -352,14 +355,24 @@ int main(int argc, char **argv)
 	for (n=niter+1; n<=nt; n++)
 	{
 		// half-advance of the magnetic field
-		bfield(by, bz, ey, ez, m, c);
-		
+		// bfield(by, bz, ey, ez, m, c);
+		cudaStatus = bfieldWithCuda(&by[0], &bz[0], &ey[0], &ez[0], m, c);
+		if (cudaStatus != cudaSuccess) {
+			fprintf(stderr, "bfielWithCuda failed: %s\n", cudaGetErrorString(cudaStatus));
+			return -1;
+		}
+
 		// push particles (positions and velocities) over one time-step
 		mover(x, vx, vy, vz, ex, ey, ez, by, bz, ex0, ey0, ez0, bx0, by0, bz0, qme, qmi, c, np, m);
 		
 		// half-advance of the magnetic field
-		bfield(by, bz, ey, ez, m, c);
-		
+		// bfield(by, bz, ey, ez, m, c);
+		cudaStatus = bfieldWithCuda(&by[0], &bz[0], &ey[0], &ez[0], m, c);
+		if (cudaStatus != cudaSuccess) {
+			fprintf(stderr, "bfielWithCuda failed: %s\n", cudaGetErrorString(cudaStatus));
+			return -1;
+		}
+
 		// current density computation
 		current(jxe, jye, jze, jxi, jyi, jzi, x, vx, vy, vz, qse, qsi, np, m);
 		
