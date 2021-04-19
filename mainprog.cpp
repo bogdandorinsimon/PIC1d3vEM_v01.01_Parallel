@@ -377,8 +377,13 @@ int main(int argc, char **argv)
 		current(jxe, jye, jze, jxi, jyi, jzi, x, vx, vy, vz, qse, qsi, np, m);
 		
 		// full-advance of the electric field
-		efield(ex, ey, ez, by, bz, jxe, jye, jze, jxi, jyi, jzi, m, c);
-		
+		// efield(ex, ey, ez, by, bz, jxe, jye, jze, jxi, jyi, jzi, m, c);
+		cudaStatus = efieldWithCuda(&ex[0], &ey[0], &ez[0], &by[0], &bz[0], &jxe[0], &jye[0], &jze[0], &jxi[0], &jyi[0], &jzi[0], m, c);
+		if (cudaStatus != cudaSuccess) {
+			fprintf(stderr, "efielWithCuda failed: %s\n", cudaGetErrorString(cudaStatus));
+			return -1;
+		}
+
 		// apply periodicity for particles
 		for (i=0; i<2*np; i++)
 		{

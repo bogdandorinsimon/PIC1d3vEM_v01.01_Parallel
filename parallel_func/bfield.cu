@@ -5,33 +5,33 @@
 __global__ void bfieldKernel(double *by, double *bz, double *ey, double *ez, int m, double c) {
 	int i = threadIdx.x;
 
-	if (i < 3 || i > m - 3) {
+	if (i >= 3 && i <= m - 3) {
 		by[i] = by[i] + 0.5 * c * (ez[i] - ez[i - 1]);
 		bz[i] = bz[i] - 0.5 * c * (ey[i] - ey[i - 1]);
 	}
 
 	if (i == m - 1) {
-		by[m - 1] = by[4];
-		bz[m - 1] = bz[4];
+		by[i] = by[4];
+		bz[i] = bz[4];
 	}
 
 	if (i == m - 2) {
-		by[m - 2] = by[3];
-		bz[m - 2] = bz[3];
+		by[i] = by[3];
+		bz[i] = bz[3];
 	}
 
 	switch (i) {
 	case 0:
-		by[0] = by[m - 5];
-		bz[0] = bz[m - 5];
+		by[i] = by[m - 5];
+		bz[i] = bz[m - 5];
 		break;
 	case 1:
-		by[1] = by[m - 4];
-		bz[1] = bz[m - 4];
+		by[i] = by[m - 4];
+		bz[i] = bz[m - 4];
 		break;
 	case 2:
-		by[2] = by[m - 3];
-		bz[2] = bz[m - 3];
+		by[i] = by[m - 3];
+		bz[i] = bz[m - 3];
 		break;
 	}
 }
@@ -72,7 +72,7 @@ cudaError_t bfieldWithCuda(double *h_by, double *h_bz, double *h_ey, double *h_e
 
 	cudaStatus = cudaDeviceSynchronize();
 	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", cudaStatus);
+		fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching bfieldKernel!\n", cudaStatus);
 		goto Error;
 	}
 
