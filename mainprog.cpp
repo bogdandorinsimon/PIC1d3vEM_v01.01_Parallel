@@ -21,7 +21,7 @@ int main(int argc, char **argv)
 {
 	char inputfilename[1000], nt_string[100], formatSpec[10], fname_prtl[1000], aux_prtl[1000], fname_flds[1000], aux_flds[1000], \
 	     aux_crnt[1000], fname_crnt[1000];
-	int i, chpos, m, nt, np, sind_p, sind_v, niter, m_check, np_check, niter_check, n, save_data_step;
+	int i, chpos, m, nt, np, sind_p, sind_v, niter, m_check, np_check, niter_check, n, save_data_step, parallel;
 	double qme, qmi, qse, qsi, VTe0, VTi0, Uxe0, Uye0, Uze0, Uxi0, Uyi0, Uzi0, ex0, ey0, ez0, bx0, by0, bz0, c, etaK, etaE, etaB;
 	double tempvar[24];
 	FILE *f_flds, *f_prtl, *f_crnt, *f_enrg;
@@ -42,21 +42,28 @@ int main(int argc, char **argv)
 	
 	cout << "**** Input file: <" << argv[1] << ">\n";
 	cout << "**** Save data step: " << argv[2] << "\n";
-	cout << "**** Is this a NEW run? [Y/N]: " << argv[3] << "\n";
-	
-	if (strcmp(argv[3],"N")==0)
+	cout << "**** Serial/parallel implementation: " << argv[3] << "\n";
+
+	parallel = strcmp(argv[3], "P") == 0;
+	if (!parallel & strcmp(argv[3], "S") != 0) {
+		cout << "********* ERROR! - Choose S or P which stands for Serial/Parallel implementations ... now exiting to system!\n\n";
+		exit(EXIT_FAILURE);
+	}
+
+	cout << "**** Is this a NEW run? [Y/N]: " << argv[4] << "\n";
+	if (strcmp(argv[4],"N")==0)
 	{
-		if (argc!=6)
+		if (argc!=7)
 		{
 			cout << "********* ERROR! - Specify the fields and particles files ... now exiting to system!\n\n";	
 			exit(EXIT_FAILURE);			
 		}
 		cout << "********* This is NOT a new run!\n";
 		cout << "********* Starting simulation from the previous time-step:\n";
-		cout << "********* fields file: <" << argv[4] << "> and particles file: <" << argv[5] << ">\n";
+		cout << "********* fields file: <" << argv[5] << "> and particles file: <" << argv[6] << ">\n";
 	}
 	
-	if (strcmp(argv[3],"Y")!=0 & strcmp(argv[3],"N")!=0)
+	if (strcmp(argv[4],"Y")!=0 & strcmp(argv[4],"N")!=0)
 	{
 		cout << "********* ERROR! - Choose Y or N ... now exiting to system!\n\n";	
 		exit(EXIT_FAILURE);
@@ -159,7 +166,7 @@ int main(int argc, char **argv)
 	//--------------------------------------------------------------------------------------------------------------------------------
 	// INITIALIZATION section
 	
-	if (strcmp(argv[3],"Y")==0)
+	if (strcmp(argv[4],"Y")==0)
 	{
 		// NEW SIMULATION
 	
@@ -244,7 +251,7 @@ int main(int argc, char **argv)
         	fwrite(&bz[0],sizeof(double),m,f_flds);
         fclose(f_flds);     
 	}
-	else if (strcmp(argv[3],"N")==0)
+	else if (strcmp(argv[4],"N")==0)
 	{
 		// STARTING from a PREVIOUS simulation
 	
@@ -259,7 +266,7 @@ int main(int argc, char **argv)
 		bz.resize(m);
 	
 		// read the fields file	
-		f_flds=fopen(argv[4],"r");
+		f_flds=fopen(argv[5],"r");
 			fread(&niter,sizeof(int),1,f_flds);
 			fread(&m_check,sizeof(int),1,f_flds);
 			fread(&ex[0],sizeof(double),m,f_flds);
@@ -276,7 +283,7 @@ int main(int argc, char **argv)
 		vz.resize(2*np);
 		
 		// read the particles file
-		f_prtl=fopen(argv[5],"r");
+		f_prtl=fopen(argv[6],"r");
         	fread(&niter_check,sizeof(int),1,f_prtl);
         	fread(&np_check,sizeof(int),1,f_prtl);
         	fread(&x[0],sizeof(double),2*np,f_prtl);
@@ -316,7 +323,7 @@ int main(int argc, char **argv)
 	etaB_ALL.assign(nt+1,0.0);
 	
 	// compute the initial current density and the initial energy
-	if (strcmp(argv[3],"Y")==0)
+	if (strcmp(argv[4],"Y")==0)
 	{
 		// current density computation
 		current(jxe, jye, jze, jxi, jyi, jzi, x, vx, vy, vz, qse, qsi, np, m);
@@ -355,24 +362,32 @@ int main(int argc, char **argv)
 	for (n=niter+1; n<=nt; n++)
 	{
 		// half-advance of the magnetic field
-		// bfield(by, bz, ey, ez, m, c);
-		cudaStatus = bfieldWithCuda(&by[0], &bz[0], &ey[0], &ez[0], m, c);
-		if (cudaStatus != cudaSuccess) {
-			fprintf(stderr, "bfielWithCuda failed: %s\n", cudaGetErrorString(cudaStatus));
-			return -1;
+		if (parallel) {
+			cudaStatus = bfieldWithCuda(&by[0], &bz[0], &ey[0], &ez[0], m, c);
+			if (cudaStatus != cudaSuccess) {
+				fprintf(stderr, "bfielWithCuda failed: %s\n", cudaGetErrorString(cudaStatus));
+				return -1;
+			}
+		}
+		else {
+			bfield(by, bz, ey, ez, m, c);
 		}
 
 		// push particles (positions and velocities) over one time-step
 		mover(x, vx, vy, vz, ex, ey, ez, by, bz, ex0, ey0, ez0, bx0, by0, bz0, qme, qmi, c, np, m);
 		
 		// half-advance of the magnetic field
-		// bfield(by, bz, ey, ez, m, c);
-		cudaStatus = bfieldWithCuda(&by[0], &bz[0], &ey[0], &ez[0], m, c);
-		if (cudaStatus != cudaSuccess) {
-			fprintf(stderr, "bfielWithCuda failed: %s\n", cudaGetErrorString(cudaStatus));
-			return -1;
+		if (parallel) {
+			cudaStatus = bfieldWithCuda(&by[0], &bz[0], &ey[0], &ez[0], m, c);
+			if (cudaStatus != cudaSuccess) {
+				fprintf(stderr, "bfielWithCuda failed: %s\n", cudaGetErrorString(cudaStatus));
+				return -1;
+			}
 		}
-
+		else {
+			bfield(by, bz, ey, ez, m, c);
+		}
+		
 		// current density computation
 		current(jxe, jye, jze, jxi, jyi, jzi, x, vx, vy, vz, qse, qsi, np, m);
 		
