@@ -138,6 +138,7 @@
   <ItemGroup>
     <CudaCompile Include="parallel_func\bfield.cu" />
     <CudaCompile Include="parallel_func\efield.cu" />
+    <CudaCompile Include="parallel_func\mover.cu" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
