@@ -9,7 +9,7 @@ __global__ void moverKernel(double *x, double *vx, double *vy, double *vz, doubl
 {
 	double ex_p, ey_p, ez_p, by_p, bz_p, qm, gamma_p, eps_x, eps_y, eps_z, beta_x, beta_y, beta_z, ux1, uy1, uz1, wx, wy, wz, \
 		   ux2, uy2, uz2, ux, uy, uz;
-	int index = threadIdx.x;
+	int index = blockIdx.x * blockDim.x + threadIdx.x;
 
 	// particle 'index' is located between i and i+1 and between j+1/2 and j+3/2
 	int i = x[index];
@@ -88,6 +88,8 @@ double ex0, double ey0, double ez0, double bx0, double by0, double bz0, double q
 	const unsigned NUMBER_OF_PARTICLES = 2 * np;
 	const unsigned ARRAY_BYTES_CELLS = m * sizeof(double);
 	const unsigned ARRAY_BYTES_PARTICLES = NUMBER_OF_PARTICLES * sizeof(double);
+	const unsigned BLOCK_SIZE = 256;  
+	const unsigned NUM_OF_BLOCKS = (2 * np - 1) / BLOCK_SIZE;
 
 	cudaMalloc((void**)&d_x, ARRAY_BYTES_PARTICLES);
 	cudaMalloc((void**)&d_vx, ARRAY_BYTES_PARTICLES);
@@ -124,7 +126,7 @@ double ex0, double ey0, double ez0, double bx0, double by0, double bz0, double q
 		goto Error;
 	}
 
-	moverKernel<<<1, NUMBER_OF_PARTICLES>>>(d_x, d_vx, d_vy, d_vz, d_ex, d_ey, d_ez, d_by, d_bz, ex0, ey0, ez0, bx0, by0, bz0, qme, qmi, c, np, m);
+	moverKernel<<<NUM_OF_BLOCKS, BLOCK_SIZE>>>(d_x, d_vx, d_vy, d_vz, d_ex, d_ey, d_ez, d_by, d_bz, ex0, ey0, ez0, bx0, by0, bz0, qme, qmi, c, np, m);
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "moverWithCuda: moverKernel failed: %s\n", cudaGetErrorString(cudaStatus));
