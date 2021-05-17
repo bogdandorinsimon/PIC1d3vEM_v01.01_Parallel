@@ -89,7 +89,7 @@ double ex0, double ey0, double ez0, double bx0, double by0, double bz0, double q
 	const unsigned ARRAY_BYTES_CELLS = m * sizeof(double);
 	const unsigned ARRAY_BYTES_PARTICLES = NUMBER_OF_PARTICLES * sizeof(double);
 	const unsigned BLOCK_SIZE = 256;  
-	const unsigned NUM_OF_BLOCKS = (2 * np - 1) / BLOCK_SIZE;
+	const unsigned NUM_OF_BLOCKS = (NUMBER_OF_PARTICLES - 1) / BLOCK_SIZE;
 
 	cudaMalloc((void**)&d_x, ARRAY_BYTES_PARTICLES);
 	cudaMalloc((void**)&d_vx, ARRAY_BYTES_PARTICLES);

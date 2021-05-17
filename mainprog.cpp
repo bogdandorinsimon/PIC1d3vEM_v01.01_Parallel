@@ -374,8 +374,6 @@ int main(int argc, char **argv)
 				fprintf(stderr, "moverWithCuda failed: %s\n", cudaGetErrorString(cudaStatus));
 				return EXIT_FAILURE;
 			}
-			
-			//mover(x, vx, vy, vz, ex, ey, ez, by, bz, ex0, ey0, ez0, bx0, by0, bz0, qme, qmi, c, np, m);
 
 			cudaStatus = bfieldWithCuda(&by[0], &bz[0], &ey[0], &ez[0], m, c);
 			if (cudaStatus != cudaSuccess) {

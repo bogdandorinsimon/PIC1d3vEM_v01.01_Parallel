@@ -8,7 +8,7 @@ __global__ void efieldKernel(
 	double* jxe, double* jye, double* jze, 
 	double* jxi, double* jyi, double* jzi, 
 	int m, double c) {
-	int i = threadIdx.x;
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
 
 	if (i >= 2 && i < m - 3) {
 		ex[i] = ex[i] - (jxe[i] + jxi[i]);
@@ -64,6 +64,9 @@ cudaError_t efieldWithCuda(
 	cudaError_t cudaStatus;
 
 	const unsigned ARRAY_BYTES = m * sizeof(double);
+	const unsigned BLOCK_SIZE = 256;
+	const unsigned NUM_OF_BLOCKS = (m - 1) / BLOCK_SIZE;
+
 	cudaMalloc((void**)&d_ex, ARRAY_BYTES);
 	cudaMalloc((void**)&d_ey, ARRAY_BYTES);
 	cudaMalloc((void**)&d_ez, ARRAY_BYTES);
@@ -106,7 +109,7 @@ cudaError_t efieldWithCuda(
 		goto Error;
 	}
 
-	efieldKernel << <1, m >> > (d_ex, d_ey, d_ez, d_by, d_bz, d_jxe, d_jye, d_jze, d_jxi, d_jyi, d_jzi, m, c);
+	efieldKernel << <NUM_OF_BLOCKS, BLOCK_SIZE>> > (d_ex, d_ey, d_ez, d_by, d_bz, d_jxe, d_jye, d_jze, d_jxi, d_jyi, d_jzi, m, c);
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "efieldWithCuda: efieldKernel failed: %s\n", cudaGetErrorString(cudaStatus));
