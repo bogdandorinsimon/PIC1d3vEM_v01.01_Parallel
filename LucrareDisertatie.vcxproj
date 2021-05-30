@@ -137,6 +137,7 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="parallel_func\bfield.cu" />
+    <CudaCompile Include="parallel_func\current.cu" />
     <CudaCompile Include="parallel_func\efield.cu" />
     <CudaCompile Include="parallel_func\mover.cu" />
   </ItemGroup>
