@@ -13,7 +13,7 @@ __global__ void moverKernel(double *x, double *vx, double *vy, double *vz, doubl
 
 	// particle 'index' is located between i and i+1 and between j+1/2 and j+3/2
 	int i = x[index];
-	int j = i - 0.5;
+	int j = x[index] - 0.5;
 
 	// compute the electric and magnetic fields in the actual position of this particle
 	// relocation from half-integer to full-integer grid points is needed for Ex: interpolarion from full-integer grid-points
@@ -28,7 +28,14 @@ __global__ void moverKernel(double *x, double *vx, double *vy, double *vz, doubl
 	bz_p = (j + 1.5 - x[index]) * 0.5 * (bz[j] + bz[j + 1]) + (x[index] - j - 0.5) * 0.5 * (bz[j + 1] + bz[j + 2]);
 
 	// check if particle 'k' is electron or ion
-	qm = index < np ? qme : qmi;
+	if (index < np) {
+		//electron
+		qm = qme;
+	}
+	else {
+		//ion
+		qm = qmi;
+	}
 
 	// factor proportional to E-field
 	// note that the external electric field is added to the internal one at this step

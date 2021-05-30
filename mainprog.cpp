@@ -24,9 +24,9 @@ int main(int argc, char **argv)
 	int i, chpos, m, nt, np, sind_p, sind_v, niter, m_check, np_check, niter_check, n, save_data_step, parallel;
 	double qme, qmi, qse, qsi, VTe0, VTi0, Uxe0, Uye0, Uze0, Uxi0, Uyi0, Uzi0, ex0, ey0, ez0, bx0, by0, bz0, c, etaK, etaE, etaB;
 	double tempvar[24];
-	FILE *f_flds, *f_prtl, *f_crnt, *f_enrg;
+	FILE *f_flds, *f_prtl, *f_crnt, *f_enrg, *xvalues_file;
 	clock_t timeCPU, timeCPU0, timeCPU_START, timeCPU_END;
-	
+
 	VecDoub x(1), vx(1), vy(1), vz(1), ex(1), ey(1), ez(1), by(1), bz(1), jxe(1), jye(1), jze(1), jxi(1), jyi(1), jzi(1), \
 	        etaK_ALL(1), etaE_ALL(1), etaB_ALL(1);
 	
@@ -48,6 +48,13 @@ int main(int argc, char **argv)
 	if (!parallel & strcmp(argv[3], "S") != 0) {
 		cout << "********* ERROR! - Choose S or P which stands for Serial/Parallel implementations ... now exiting to system!\n\n";
 		exit(EXIT_FAILURE);
+	}
+
+	if (parallel) {
+		xvalues_file = fopen("files/parallel_xvalues.x", "wb");
+	}
+	else {
+		xvalues_file = fopen("files/serial_xvalues.x", "wb");
 	}
 
 	cout << "**** Is this a NEW run? [Y/N]: " << argv[4] << "\n";
@@ -427,6 +434,9 @@ int main(int argc, char **argv)
 		// data are saved for n = save_data_step, 2*save_data_step, ...
 		if (n % save_data_step == 0)
 		{
+			// save data for testing purposes
+			fwrite(&x[0], sizeof(double), 2 * np, xvalues_file);
+
 			// build the names of the output files corresponding to iteration "n"
         	sprintf(fname_prtl,aux_prtl,n);
         	sprintf(fname_flds,aux_flds,n);
@@ -515,6 +525,33 @@ int main(int argc, char **argv)
 	cout << "*********************************************************\n";
 	cout << "**** SIMULATION COMPLETED SUCCESSFULLY - END OF RUN! ****\n";
 	cout << "*********************************************************\n\n";
+
+	fclose(xvalues_file);
+	const unsigned NUMBER_OF_PARTICLES = 2 * np;
+	double *p_xvalues = (double*)malloc(NUMBER_OF_PARTICLES * sizeof(double));
+	double *s_xvalues = (double*)malloc(NUMBER_OF_PARTICLES * sizeof(double));
+
+	FILE* p_xvalues_file = fopen("files/parallel_xvalues.x", "rb");
+	FILE* s_xvalues_file = fopen("files/serial_xvalues.x", "rb");
+
+	fread(p_xvalues, sizeof(double), 2 * np, p_xvalues_file);
+	fread(s_xvalues, sizeof(double), 2 * np, s_xvalues_file);
+
+	fclose(p_xvalues_file);
+	fclose(s_xvalues_file);
+
+	int count_diff = 0;
+	double err = 0.0;
+	double err2 = 0.0;
+
+	for (int i = 0; i < 2 * np; i++) {
+		if (p_xvalues[i] != s_xvalues[i]) {
+			count_diff++; 
+		}
+
+		err = err + fabs(p_xvalues[i] - s_xvalues[i]);
+	}
+	printf("\n # of Different values: %i . Err: %.17g", count_diff, err);
 
 	getchar();
 }
