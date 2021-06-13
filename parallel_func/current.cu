@@ -211,7 +211,7 @@ cudaError_t currentWithCuda(double* h_jxe_s, double* h_jye_s, double* h_jze_s, d
 		fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching currentKernel!\n", cudaStatus);
 		goto Error;
 	}
-	// end serial
+	// end current
 
 	// smoothing
 	currentSmoothingKernel<<<NUM_OF_BLOCKS_CELLS, BLOCK_SIZE >> > (d_jxe, d_jye, d_jze, d_jxi, d_jyi, d_jzi, d_jxe_s, d_jye_s, d_jze_s, d_jxi_s, d_jyi_s, d_jzi_s, m);
