@@ -67,5 +67,6 @@
     <CudaCompile Include="parallel_func\mover.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
+    <CudaCompile Include="parallel_func\current.cu" />
   </ItemGroup>
 </Project>

@@ -371,7 +371,7 @@ int main(int argc, char **argv)
 		if (parallel) {
 			cudaStatus = bfieldWithCuda(&by[0], &bz[0], &ey[0], &ez[0], m, c);
 			if (cudaStatus != cudaSuccess) {
-				fprintf(stderr, "bfielWithCuda failed: %s\n", cudaGetErrorString(cudaStatus));
+				fprintf(stderr, "bfieldWithCuda failed: %s\n", cudaGetErrorString(cudaStatus));
 				return EXIT_FAILURE;
 			}
 
@@ -388,11 +388,15 @@ int main(int argc, char **argv)
 				return EXIT_FAILURE;
 			}
 
-			current(jxe, jye, jze, jxi, jyi, jzi, x, vx, vy, vz, qse, qsi, np, m);
+			cudaStatus = currentWithCuda(&jxe[0], &jye[0], &jze[0], &jxi[0], &jyi[0], &jzi[0], &x[0], &vx[0], &vy[0], &vz[0], qse, qsi, np, m);
+			if(cudaStatus != cudaSuccess) {
+				fprintf(stderr, "currentWithCuda failed: %s\n", cudaGetErrorString(cudaStatus));
+				return EXIT_FAILURE;
+			}
 
 			cudaStatus = efieldWithCuda(&ex[0], &ey[0], &ez[0], &by[0], &bz[0], &jxe[0], &jye[0], &jze[0], &jxi[0], &jyi[0], &jzi[0], m, c);
 			if (cudaStatus != cudaSuccess) {
-				fprintf(stderr, "efielWithCuda failed: %s\n", cudaGetErrorString(cudaStatus));
+				fprintf(stderr, "efieldWithCuda failed: %s\n", cudaGetErrorString(cudaStatus));
 				return EXIT_FAILURE;
 			}
 		} else {
