@@ -8,43 +8,46 @@ __global__ void efieldKernel(
 	double* jxe, double* jye, double* jze, 
 	double* jxi, double* jyi, double* jzi, 
 	int m, double c) {
-	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	int index = blockIdx.x * blockDim.x + threadIdx.x;
+	if (index >= m) {
+		return;
+	}
 
-	if (i >= 2 && i < m - 3) {
-		ex[i] = ex[i] - (jxe[i] + jxi[i]);
-		ey[i] = ey[i] - (jye[i] + jyi[i]) - c * (bz[i + 1] - bz[i]);
-		ez[i] = ez[i] - (jze[i] + jzi[i]) + c * (by[i + 1] - by[i]);
+	if (index >= 2 && index < m - 3) {
+		ex[index] = ex[index] - (jxe[index] + jxi[index]);
+		ey[index] = ey[index] - (jye[index] + jyi[index]) - c * (bz[index + 1] - bz[index]);
+		ez[index] = ez[index] - (jze[index] + jzi[index]) + c * (by[index + 1] - by[index]);
 	}
 
 
-	if (i == m - 1) {
-		ex[i] = ex[4];
-		ey[i] = ey[4];
-		ez[i] = ez[4];
+	if (index == m - 1) {
+		ex[index] = ex[4];
+		ey[index] = ey[4];
+		ez[index] = ez[4];
 	}
 
-	if (i == m - 2) {
-		ex[i] = ex[3];
-		ey[i] = ey[3];
-		ez[i] = ez[3];
+	if (index == m - 2) {
+		ex[index] = ex[3];
+		ey[index] = ey[3];
+		ez[index] = ez[3];
 	}
 
-	if (i == m - 3) {
-		ex[i] = ex[2];
-		ey[i] = ey[2];
-		ez[i] = ez[2];
+	if (index == m - 3) {
+		ex[index] = ex[2];
+		ey[index] = ey[2];
+		ez[index] = ez[2];
 	}
 
-	switch (i) {
+	switch (index) {
 	case 0:
-		ex[i] = ex[m - 5];
-		ey[i] = ey[m - 5];
-		ez[i] = ez[m - 5];
+		ex[index] = ex[m - 5];
+		ey[index] = ey[m - 5];
+		ez[index] = ez[m - 5];
 		break;
 	case 1:
-		ex[i] = ex[m - 4];
-		ey[i] = ey[m - 4];
-		ez[i] = ez[m - 4];
+		ex[index] = ex[m - 4];
+		ey[index] = ey[m - 4];
+		ez[index] = ez[m - 4];
 		break;
 	}
 }
@@ -63,9 +66,9 @@ cudaError_t efieldWithCuda(
 
 	cudaError_t cudaStatus;
 
-	const unsigned ARRAY_BYTES = m * sizeof(double);
-	const unsigned BLOCK_SIZE = 256;
-	const unsigned NUM_OF_BLOCKS = (m - 1) / BLOCK_SIZE;
+	const unsigned long ARRAY_BYTES = m * sizeof(double);
+	const unsigned long BLOCK_SIZE = 256;
+	const unsigned long NUM_OF_BLOCKS = (m - 1) / BLOCK_SIZE + 1;
 
 	cudaMalloc((void**)&d_ex, ARRAY_BYTES);
 	cudaMalloc((void**)&d_ey, ARRAY_BYTES);

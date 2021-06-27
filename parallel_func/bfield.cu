@@ -3,35 +3,39 @@
 #include "device_launch_parameters.h"
 
 __global__ void bfieldKernel(double *by, double *bz, double *ey, double *ez, int m, double c) {
-	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	int index = blockIdx.x * blockDim.x + threadIdx.x;
 
-	if (i >= 3 && i <= m - 3) {
-		by[i] = by[i] + 0.5 * c * (ez[i] - ez[i - 1]);
-		bz[i] = bz[i] - 0.5 * c * (ey[i] - ey[i - 1]);
+	if (index >= m) {
+		return;
 	}
 
-	if (i == m - 1) {
-		by[i] = by[4];
-		bz[i] = bz[4];
+	if (index >= 3 && index <= m - 3) {
+		by[index] = by[index] + 0.5 * c * (ez[index] - ez[index - 1]);
+		bz[index] = bz[index] - 0.5 * c * (ey[index] - ey[index - 1]);
 	}
 
-	if (i == m - 2) {
-		by[i] = by[3];
-		bz[i] = bz[3];
+	if (index == m - 1) {
+		by[index] = by[4];
+		bz[index] = bz[4];
 	}
 
-	switch (i) {
+	if (index == m - 2) {
+		by[index] = by[3];
+		bz[index] = bz[3];
+	}
+
+	switch (index) {
 	case 0:
-		by[i] = by[m - 5];
-		bz[i] = bz[m - 5];
+		by[index] = by[m - 5];
+		bz[index] = bz[m - 5];
 		break;
 	case 1:
-		by[i] = by[m - 4];
-		bz[i] = bz[m - 4];
+		by[index] = by[m - 4];
+		bz[index] = bz[m - 4];
 		break;
 	case 2:
-		by[i] = by[m - 3];
-		bz[i] = bz[m - 3];
+		by[index] = by[m - 3];
+		bz[index] = bz[m - 3];
 		break;
 	}
 }
@@ -40,9 +44,9 @@ cudaError_t bfieldWithCuda(double *h_by, double *h_bz, double *h_ey, double *h_e
 	double *d_by, *d_bz, *d_ey, *d_ez;
 	cudaError_t cudaStatus;
 
-	const unsigned ARRAY_BYTES = m * sizeof(double);
-	const unsigned BLOCK_SIZE = 256;
-	const unsigned NUM_OF_BLOCKS = (m - 1) / BLOCK_SIZE;
+	const unsigned long ARRAY_BYTES = m * sizeof(double);
+	const unsigned long BLOCK_SIZE = 256;
+	const unsigned long NUM_OF_BLOCKS = (m - 1) / BLOCK_SIZE + 1;
 
 	cudaMalloc((void**) &d_by, ARRAY_BYTES);
 	cudaMalloc((void**) &d_bz, ARRAY_BYTES);
