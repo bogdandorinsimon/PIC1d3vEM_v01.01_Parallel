@@ -3,7 +3,7 @@
 #include "device_launch_parameters.h"
 
 __global__ void bfieldKernel(double *by, double *bz, double *ey, double *ez, int m, double c) {
-	int i = threadIdx.x;
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
 
 	if (i >= 3 && i <= m - 3) {
 		by[i] = by[i] + 0.5 * c * (ez[i] - ez[i - 1]);
@@ -40,11 +40,14 @@ cudaError_t bfieldWithCuda(double *h_by, double *h_bz, double *h_ey, double *h_e
 	double *d_by, *d_bz, *d_ey, *d_ez;
 	cudaError_t cudaStatus;
 
-	const unsigned ARRAY_BITES = m * sizeof(double);
-	cudaMalloc((void**) &d_by, ARRAY_BITES);
-	cudaMalloc((void**) &d_bz, ARRAY_BITES);
-	cudaMalloc((void**) &d_ey, ARRAY_BITES);
-	cudaMalloc((void**) &d_ez, ARRAY_BITES);
+	const unsigned ARRAY_BYTES = m * sizeof(double);
+	const unsigned BLOCK_SIZE = 256;
+	const unsigned NUM_OF_BLOCKS = (m - 1) / BLOCK_SIZE;
+
+	cudaMalloc((void**) &d_by, ARRAY_BYTES);
+	cudaMalloc((void**) &d_bz, ARRAY_BYTES);
+	cudaMalloc((void**) &d_ey, ARRAY_BYTES);
+	cudaMalloc((void**) &d_ez, ARRAY_BYTES);
 
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {
@@ -52,10 +55,10 @@ cudaError_t bfieldWithCuda(double *h_by, double *h_bz, double *h_ey, double *h_e
 		goto Error;
 	}
 
-	cudaMemcpy(d_by, h_by, ARRAY_BITES, cudaMemcpyHostToDevice);
-	cudaMemcpy(d_bz, h_bz, ARRAY_BITES, cudaMemcpyHostToDevice);
-	cudaMemcpy(d_ey, h_ey, ARRAY_BITES, cudaMemcpyHostToDevice);
-	cudaMemcpy(d_ez, h_ez, ARRAY_BITES, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_by, h_by, ARRAY_BYTES, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_bz, h_bz, ARRAY_BYTES, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_ey, h_ey, ARRAY_BYTES, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_ez, h_ez, ARRAY_BYTES, cudaMemcpyHostToDevice);
 
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {
@@ -63,7 +66,7 @@ cudaError_t bfieldWithCuda(double *h_by, double *h_bz, double *h_ey, double *h_e
 		goto Error;
 	}
 
-	bfieldKernel<<<1, m>>>(d_by, d_bz, d_ey, d_ez, m, c);
+	bfieldKernel<<<NUM_OF_BLOCKS, BLOCK_SIZE>>>(d_by, d_bz, d_ey, d_ez, m, c);
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "bfieldWithCuda: bfieldKernel failed: %s\n", cudaGetErrorString(cudaStatus));
@@ -76,8 +79,8 @@ cudaError_t bfieldWithCuda(double *h_by, double *h_bz, double *h_ey, double *h_e
 		goto Error;
 	}
 
-	cudaMemcpy(h_by, d_by, ARRAY_BITES, cudaMemcpyDeviceToHost);
-	cudaMemcpy(h_bz, d_bz, ARRAY_BITES, cudaMemcpyDeviceToHost);
+	cudaMemcpy(h_by, d_by, ARRAY_BYTES, cudaMemcpyDeviceToHost);
+	cudaMemcpy(h_bz, d_bz, ARRAY_BYTES, cudaMemcpyDeviceToHost);
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "bfieldWithCuda: cudaMemcpyDeviceToHost failed!");

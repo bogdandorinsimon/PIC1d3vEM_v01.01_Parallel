@@ -8,7 +8,7 @@ __global__ void efieldKernel(
 	double* jxe, double* jye, double* jze, 
 	double* jxi, double* jyi, double* jzi, 
 	int m, double c) {
-	int i = threadIdx.x;
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
 
 	if (i >= 2 && i < m - 3) {
 		ex[i] = ex[i] - (jxe[i] + jxi[i]);
@@ -63,21 +63,24 @@ cudaError_t efieldWithCuda(
 
 	cudaError_t cudaStatus;
 
-	const unsigned ARRAY_BITES = m * sizeof(double);
-	cudaMalloc((void**)&d_ex, ARRAY_BITES);
-	cudaMalloc((void**)&d_ey, ARRAY_BITES);
-	cudaMalloc((void**)&d_ez, ARRAY_BITES);
+	const unsigned ARRAY_BYTES = m * sizeof(double);
+	const unsigned BLOCK_SIZE = 256;
+	const unsigned NUM_OF_BLOCKS = (m - 1) / BLOCK_SIZE;
 
-	cudaMalloc((void**)&d_by, ARRAY_BITES);
-	cudaMalloc((void**)&d_bz, ARRAY_BITES);
+	cudaMalloc((void**)&d_ex, ARRAY_BYTES);
+	cudaMalloc((void**)&d_ey, ARRAY_BYTES);
+	cudaMalloc((void**)&d_ez, ARRAY_BYTES);
 
-	cudaMalloc((void**)&d_jxe, ARRAY_BITES);
-	cudaMalloc((void**)&d_jye, ARRAY_BITES);
-	cudaMalloc((void**)&d_jze, ARRAY_BITES);
+	cudaMalloc((void**)&d_by, ARRAY_BYTES);
+	cudaMalloc((void**)&d_bz, ARRAY_BYTES);
 
-	cudaMalloc((void**)&d_jxi, ARRAY_BITES);
-	cudaMalloc((void**)&d_jyi, ARRAY_BITES);
-	cudaMalloc((void**)&d_jzi, ARRAY_BITES);
+	cudaMalloc((void**)&d_jxe, ARRAY_BYTES);
+	cudaMalloc((void**)&d_jye, ARRAY_BYTES);
+	cudaMalloc((void**)&d_jze, ARRAY_BYTES);
+
+	cudaMalloc((void**)&d_jxi, ARRAY_BYTES);
+	cudaMalloc((void**)&d_jyi, ARRAY_BYTES);
+	cudaMalloc((void**)&d_jzi, ARRAY_BYTES);
 
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {
@@ -85,20 +88,20 @@ cudaError_t efieldWithCuda(
 		goto Error;
 	}
 
-	cudaMemcpy(d_ex, h_ex, ARRAY_BITES, cudaMemcpyHostToDevice);
-	cudaMemcpy(d_ey, h_ey, ARRAY_BITES, cudaMemcpyHostToDevice);
-	cudaMemcpy(d_ez, h_ez, ARRAY_BITES, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_ex, h_ex, ARRAY_BYTES, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_ey, h_ey, ARRAY_BYTES, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_ez, h_ez, ARRAY_BYTES, cudaMemcpyHostToDevice);
 
-	cudaMemcpy(d_by, h_by, ARRAY_BITES, cudaMemcpyHostToDevice);
-	cudaMemcpy(d_bz, h_bz, ARRAY_BITES, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_by, h_by, ARRAY_BYTES, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_bz, h_bz, ARRAY_BYTES, cudaMemcpyHostToDevice);
 
-	cudaMemcpy(d_jxe, h_jxe, ARRAY_BITES, cudaMemcpyHostToDevice);
-	cudaMemcpy(d_jye, h_jye, ARRAY_BITES, cudaMemcpyHostToDevice);
-	cudaMemcpy(d_jze, h_jze, ARRAY_BITES, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_jxe, h_jxe, ARRAY_BYTES, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_jye, h_jye, ARRAY_BYTES, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_jze, h_jze, ARRAY_BYTES, cudaMemcpyHostToDevice);
 
-	cudaMemcpy(d_jxi, h_jxi, ARRAY_BITES, cudaMemcpyHostToDevice);
-	cudaMemcpy(d_jyi, h_jyi, ARRAY_BITES, cudaMemcpyHostToDevice);
-	cudaMemcpy(d_jzi, h_jzi, ARRAY_BITES, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_jxi, h_jxi, ARRAY_BYTES, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_jyi, h_jyi, ARRAY_BYTES, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_jzi, h_jzi, ARRAY_BYTES, cudaMemcpyHostToDevice);
 
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {
@@ -106,7 +109,7 @@ cudaError_t efieldWithCuda(
 		goto Error;
 	}
 
-	efieldKernel << <1, m >> > (d_ex, d_ey, d_ez, d_by, d_bz, d_jxe, d_jye, d_jze, d_jxi, d_jyi, d_jzi, m, c);
+	efieldKernel << <NUM_OF_BLOCKS, BLOCK_SIZE>> > (d_ex, d_ey, d_ez, d_by, d_bz, d_jxe, d_jye, d_jze, d_jxi, d_jyi, d_jzi, m, c);
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "efieldWithCuda: efieldKernel failed: %s\n", cudaGetErrorString(cudaStatus));
@@ -119,9 +122,9 @@ cudaError_t efieldWithCuda(
 		goto Error;
 	}
 
-	cudaMemcpy(h_ex, d_ex, ARRAY_BITES, cudaMemcpyDeviceToHost);
-	cudaMemcpy(h_ey, d_ey, ARRAY_BITES, cudaMemcpyDeviceToHost);
-	cudaMemcpy(h_ez, d_ez, ARRAY_BITES, cudaMemcpyDeviceToHost);
+	cudaMemcpy(h_ex, d_ex, ARRAY_BYTES, cudaMemcpyDeviceToHost);
+	cudaMemcpy(h_ey, d_ey, ARRAY_BYTES, cudaMemcpyDeviceToHost);
+	cudaMemcpy(h_ez, d_ez, ARRAY_BYTES, cudaMemcpyDeviceToHost);
 
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {

@@ -361,43 +361,49 @@ int main(int argc, char **argv)
 	timeCPU=timeCPU0;
 	for (n=niter+1; n<=nt; n++)
 	{
-		// half-advance of the magnetic field
 		if (parallel) {
 			cudaStatus = bfieldWithCuda(&by[0], &bz[0], &ey[0], &ez[0], m, c);
 			if (cudaStatus != cudaSuccess) {
 				fprintf(stderr, "bfielWithCuda failed: %s\n", cudaGetErrorString(cudaStatus));
-				return -1;
+				return EXIT_FAILURE;
 			}
-		}
-		else {
-			bfield(by, bz, ey, ez, m, c);
-		}
 
-		// push particles (positions and velocities) over one time-step
-		mover(x, vx, vy, vz, ex, ey, ez, by, bz, ex0, ey0, ez0, bx0, by0, bz0, qme, qmi, c, np, m);
-		
-		// half-advance of the magnetic field
-		if (parallel) {
+			
+			cudaStatus = moverWithCuda(&x[0], &vx[0], &vy[0], &vz[0], &ex[0], &ey[0], &ez[0], &by[0], &bz[0], ex0, ey0, ez0, bx0, by0, bz0, qme, qmi, c, np, m);
+			if (cudaStatus != cudaSuccess) {
+				fprintf(stderr, "moverWithCuda failed: %s\n", cudaGetErrorString(cudaStatus));
+				return EXIT_FAILURE;
+			}
+
 			cudaStatus = bfieldWithCuda(&by[0], &bz[0], &ey[0], &ez[0], m, c);
 			if (cudaStatus != cudaSuccess) {
 				fprintf(stderr, "bfielWithCuda failed: %s\n", cudaGetErrorString(cudaStatus));
-				return -1;
+				return EXIT_FAILURE;
 			}
-		}
-		else {
+
+			current(jxe, jye, jze, jxi, jyi, jzi, x, vx, vy, vz, qse, qsi, np, m);
+
+			cudaStatus = efieldWithCuda(&ex[0], &ey[0], &ez[0], &by[0], &bz[0], &jxe[0], &jye[0], &jze[0], &jxi[0], &jyi[0], &jzi[0], m, c);
+			if (cudaStatus != cudaSuccess) {
+				fprintf(stderr, "efielWithCuda failed: %s\n", cudaGetErrorString(cudaStatus));
+				return EXIT_FAILURE;
+			}
+		} else {
+			// half-advance of the magnetic field
 			bfield(by, bz, ey, ez, m, c);
-		}
+
+			// push particles (positions and velocities) over one time-step
+			mover(x, vx, vy, vz, ex, ey, ez, by, bz, ex0, ey0, ez0, bx0, by0, bz0, qme, qmi, c, np, m);
+
+			// half-advance of the magnetic field
+			bfield(by, bz, ey, ez, m, c);
+
+			// current density computation
+			current(jxe, jye, jze, jxi, jyi, jzi, x, vx, vy, vz, qse, qsi, np, m);
 		
-		// current density computation
-		current(jxe, jye, jze, jxi, jyi, jzi, x, vx, vy, vz, qse, qsi, np, m);
-		
-		// full-advance of the electric field
-		// efield(ex, ey, ez, by, bz, jxe, jye, jze, jxi, jyi, jzi, m, c);
-		cudaStatus = efieldWithCuda(&ex[0], &ey[0], &ez[0], &by[0], &bz[0], &jxe[0], &jye[0], &jze[0], &jxi[0], &jyi[0], &jzi[0], m, c);
-		if (cudaStatus != cudaSuccess) {
-			fprintf(stderr, "efielWithCuda failed: %s\n", cudaGetErrorString(cudaStatus));
-			return -1;
-		}
+			// full-advance of the electric field
+			efield(ex, ey, ez, by, bz, jxe, jye, jze, jxi, jyi, jzi, m, c);
+		}	
 
 		// apply periodicity for particles
 		for (i=0; i<2*np; i++)
