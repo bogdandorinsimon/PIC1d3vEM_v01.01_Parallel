@@ -374,7 +374,6 @@ int main(int argc, char **argv)
 				fprintf(stderr, "bfieldWithCuda failed: %s\n", cudaGetErrorString(cudaStatus));
 				return EXIT_FAILURE;
 			}
-
 			
 			cudaStatus = moverWithCuda(&x[0], &vx[0], &vy[0], &vz[0], &ex[0], &ey[0], &ez[0], &by[0], &bz[0], ex0, ey0, ez0, bx0, by0, bz0, qme, qmi, c, np, m);
 			if (cudaStatus != cudaSuccess) {
@@ -531,15 +530,15 @@ int main(int argc, char **argv)
 	cout << "*********************************************************\n\n";
 
 	fclose(xvalues_file);
-	const unsigned NUMBER_OF_PARTICLES = 2 * np;
+	const unsigned long NUMBER_OF_PARTICLES = 2 * np;
 	double *p_xvalues = (double*)malloc(NUMBER_OF_PARTICLES * sizeof(double));
 	double *s_xvalues = (double*)malloc(NUMBER_OF_PARTICLES * sizeof(double));
 
 	FILE* p_xvalues_file = fopen("files/parallel_xvalues.x", "rb");
 	FILE* s_xvalues_file = fopen("files/serial_xvalues.x", "rb");
 
-	fread(p_xvalues, sizeof(double), 2 * np, p_xvalues_file);
-	fread(s_xvalues, sizeof(double), 2 * np, s_xvalues_file);
+	fread(p_xvalues, sizeof(double), NUMBER_OF_PARTICLES, p_xvalues_file);
+	fread(s_xvalues, sizeof(double), NUMBER_OF_PARTICLES, s_xvalues_file);
 
 	fclose(p_xvalues_file);
 	fclose(s_xvalues_file);

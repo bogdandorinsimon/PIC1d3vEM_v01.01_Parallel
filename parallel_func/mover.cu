@@ -7,9 +7,16 @@
 __global__ void moverKernel(double *x, double *vx, double *vy, double *vz, double *ex, double *ey, double *ez, double *by, double*bz, \
 		   double ex0, double ey0, double ez0, double bx0, double by0, double bz0, double qme, double qmi, double c, int np, int m)
 {
+	int index = blockIdx.x * blockDim.x + threadIdx.x;
+	const unsigned long NUMBER_OF_PARTICLES = 2 * np;
+
+	if (index >= NUMBER_OF_PARTICLES) {
+		return;
+	}
+
 	double ex_p, ey_p, ez_p, by_p, bz_p, qm, gamma_p, eps_x, eps_y, eps_z, beta_x, beta_y, beta_z, ux1, uy1, uz1, wx, wy, wz, \
 		   ux2, uy2, uz2, ux, uy, uz;
-	int index = blockIdx.x * blockDim.x + threadIdx.x;
+	
 
 	// particle 'index' is located between i and i+1 and between j+1/2 and j+3/2
 	int i = x[index];
@@ -92,11 +99,11 @@ double ex0, double ey0, double ez0, double bx0, double by0, double bz0, double q
 	double* d_x, double* d_vx, double* d_vy, double* d_vz, double* d_ex, double* d_ey, double* d_ez, double* d_by, double* d_bz;
 	cudaError_t cudaStatus;
 
-	const unsigned NUMBER_OF_PARTICLES = 2 * np;
-	const unsigned ARRAY_BYTES_CELLS = m * sizeof(double);
-	const unsigned ARRAY_BYTES_PARTICLES = NUMBER_OF_PARTICLES * sizeof(double);
-	const unsigned BLOCK_SIZE = 256;  
-	const unsigned NUM_OF_BLOCKS = (NUMBER_OF_PARTICLES - 1) / BLOCK_SIZE;
+	const unsigned long NUMBER_OF_PARTICLES = 2 * np;
+	const unsigned long ARRAY_BYTES_CELLS = m * sizeof(double);
+	const unsigned long ARRAY_BYTES_PARTICLES = NUMBER_OF_PARTICLES * sizeof(double);
+	const unsigned long BLOCK_SIZE = 256;
+	const unsigned long NUM_OF_BLOCKS = (NUMBER_OF_PARTICLES - 1) / BLOCK_SIZE + 1;
 
 	cudaMalloc((void**)&d_x, ARRAY_BYTES_PARTICLES);
 	cudaMalloc((void**)&d_vx, ARRAY_BYTES_PARTICLES);

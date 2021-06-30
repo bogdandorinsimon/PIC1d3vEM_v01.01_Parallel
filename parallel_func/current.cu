@@ -4,10 +4,14 @@
 #include "device_launch_parameters.h"
 #include "parallel.cuh"
 
-__global__ void currentInitializationKernel(double *jxe, double *jye, double *jze, double *jxi, double *jyi, double *jzi, double* jxe_s, double* jye_s, double* jze_s, double* jxi_s, double* jyi_s, double* jzi_s)
+__global__ void currentInitializationKernel(double *jxe, double *jye, double *jze, double *jxi, double *jyi, double *jzi, double* jxe_s, double* jye_s, double* jze_s, double* jxi_s, double* jyi_s, double* jzi_s, int m)
 {
 	int index = blockIdx.x * blockDim.x + threadIdx.x;
 	
+	if (index >= m) {
+		return;
+	}
+
 	jxe[index] = 0.;
 	jye[index] = 0.;
 	jze[index] = 0.;
@@ -27,6 +31,11 @@ __global__ void currentInitializationKernel(double *jxe, double *jye, double *jz
 
 __global__ void currentSmoothingKernel(double* jxe, double* jye, double* jze, double* jxi, double* jyi, double* jzi, double* jxe_s, double* jye_s, double* jze_s, double* jxi_s, double* jyi_s, double* jzi_s, int m) {
 	int index = blockIdx.x * blockDim.x + threadIdx.x;
+
+	if (index >= m - 2) {
+		return;
+	}
+
 	if (index >= 2 && index <= m - 4) {
 		// electrons
 		jxe_s[index] = 0.25 * jxe[index - 1] + 0.5 * jxe[index] + 0.25 * jxe[index + 1];
@@ -65,6 +74,11 @@ __global__ void currentSmoothingKernel(double* jxe, double* jye, double* jze, do
 __global__ void currentKernel(double* jxe, double* jye, double* jze, double* jxi, double* jyi, double* jzi, double* jxe_s, double* jye_s, double* jze_s, \
 	double* jxi_s, double* jyi_s, double* jzi_s, double* x, double* vx, double* vy, double* vz, double qse, double qsi, int np, int m) {
 	int index = blockIdx.x * blockDim.x + threadIdx.x;
+
+	const unsigned long NUMBER_OF_PARTICLES = 2 * np;
+	if (index >= NUMBER_OF_PARTICLES) {
+		return;
+	}
 
 	int i, j;
 	double xp1, xp2, xp;
@@ -132,12 +146,12 @@ cudaError_t currentWithCuda(double* h_jxe_s, double* h_jye_s, double* h_jze_s, d
 	double* d_jxe_s, *d_jye_s, *d_jze_s, *d_jxi_s,* d_jyi_s,* d_jzi_s, *d_x, *d_vx,* d_vy, *d_vz;
 	cudaError_t cudaStatus;
 
-	const unsigned NUMBER_OF_PARTICLES = 2 * np;
-	const unsigned ARRAY_BYTES_CELLS = m * sizeof(double);
-	const unsigned ARRAY_BYTES_PARTICLES = NUMBER_OF_PARTICLES * sizeof(double);
-	const unsigned BLOCK_SIZE = 256;
-	const unsigned NUM_OF_BLOCKS_PARTICLES = (NUMBER_OF_PARTICLES - 1) / BLOCK_SIZE;
-	const unsigned NUM_OF_BLOCKS_CELLS = (m - 1) / BLOCK_SIZE;
+	const unsigned long NUMBER_OF_PARTICLES = 2 * np;
+	const unsigned long ARRAY_BYTES_CELLS = m * sizeof(double);
+	const unsigned long ARRAY_BYTES_PARTICLES = NUMBER_OF_PARTICLES * sizeof(double);
+	const unsigned long BLOCK_SIZE = 256;
+	const unsigned long NUM_OF_BLOCKS_PARTICLES = (NUMBER_OF_PARTICLES - 1) / BLOCK_SIZE + 1;
+	const unsigned long NUM_OF_BLOCKS_CELLS = (m - 1) / BLOCK_SIZE + 1;
 
 	cudaMalloc((void**)&d_jxe_s, ARRAY_BYTES_CELLS);
 	cudaMalloc((void**)&d_jye_s, ARRAY_BYTES_CELLS);
@@ -185,7 +199,7 @@ cudaError_t currentWithCuda(double* h_jxe_s, double* h_jye_s, double* h_jze_s, d
 	}
 
 	// initialization
-	currentInitializationKernel<<<NUM_OF_BLOCKS_CELLS, BLOCK_SIZE>>>(d_jxe, d_jye, d_jze, d_jxi, d_jyi, d_jzi, d_jxe_s, d_jye_s, d_jze_s, d_jxi_s, d_jyi_s, d_jzi_s);
+	currentInitializationKernel<<<NUM_OF_BLOCKS_CELLS, BLOCK_SIZE>>>(d_jxe, d_jye, d_jze, d_jxi, d_jyi, d_jzi, d_jxe_s, d_jye_s, d_jze_s, d_jxi_s, d_jyi_s, d_jzi_s, m);
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "currentWithCuda: currentInitializationKernel failed: %s\n", cudaGetErrorString(cudaStatus));
