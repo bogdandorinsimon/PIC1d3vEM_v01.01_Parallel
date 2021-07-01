@@ -363,6 +363,29 @@ int main(int argc, char **argv)
 	cout << "********* Simulation IN PROGRESS ...\n";
 	cout << "*********\n";
 	
+	double* h_x = &x[0];
+	double* h_vx = &vx[0];
+	double* h_vy = &vy[0];
+	double* h_vz = &vz[0];
+
+	double* h_ex = &ex[0];
+	double* h_ey = &ey[0];
+	double* h_ez = &ez[0];
+	double* h_by = &by[0];
+	double* h_bz = &bz[0];
+
+	double* h_jxe = &jxe[0];
+	double* h_jye = &jye[0];
+	double* h_jze = &jze[0];
+	double* h_jxi = &jxi[0];
+	double* h_jyi = &jyi[0];
+	double* h_jzi = &jzi[0];
+
+
+	if (parallel) {
+		initialize(h_x, h_vx, h_vy, h_vz, h_ex, h_ey, h_ez, h_by, h_bz, h_jxe, h_jye, h_jze, h_jxi, h_jyi, h_jzi, m, np);
+	}
+
 	// starting time of iterative process
 	timeCPU0=clock();
 	timeCPU=timeCPU0;
@@ -398,6 +421,8 @@ int main(int argc, char **argv)
 				fprintf(stderr, "efieldWithCuda failed: %s\n", cudaGetErrorString(cudaStatus));
 				return EXIT_FAILURE;
 			}
+			//bool const copyToHost = n % save_data_step == 0;
+			//parallelFunctions(h_x, h_vx, h_vy, h_vz, h_ex, h_ey, h_ez, h_by, h_bz, h_jxe, h_jye, h_jze, h_jxi, h_jyi, h_jzi, ex0, ey0, ez0, bx0, by0, bz0, qme, qmi, qse, qsi, c, m, np, copyToHost);
 		} else {
 			// half-advance of the magnetic field
 			bfield(by, bz, ey, ez, m, c);
@@ -513,7 +538,8 @@ int main(int argc, char **argv)
 	}
 	
 	cout << "**** ITERATIVE procedure COMPLETED!\n";
-	
+	freeMemory();
+
 	//--------------------------------------------------------------------------------------------------------------------------------
 	
 	// measure the time when simulation stops
@@ -552,6 +578,7 @@ int main(int argc, char **argv)
 			count_diff++; 
 		}
 
+		//printf("%d - %d\n", p_xvalues[i], s_xvalues[i]);
 		err = err + fabs(p_xvalues[i] - s_xvalues[i]);
 	}
 	printf("\n # of Different values: %i . Err: %.17g", count_diff, err);
