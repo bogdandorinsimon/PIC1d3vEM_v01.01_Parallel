@@ -392,7 +392,7 @@ int main(int argc, char **argv)
 	for (n=niter+1; n<=nt; n++)
 	{
 		if (parallel) {
-			cudaStatus = bfieldWithCuda(&by[0], &bz[0], &ey[0], &ez[0], m, c);
+			/*cudaStatus = bfieldWithCuda(&by[0], &bz[0], &ey[0], &ez[0], m, c);
 			if (cudaStatus != cudaSuccess) {
 				fprintf(stderr, "bfieldWithCuda failed: %s\n", cudaGetErrorString(cudaStatus));
 				return EXIT_FAILURE;
@@ -420,9 +420,9 @@ int main(int argc, char **argv)
 			if (cudaStatus != cudaSuccess) {
 				fprintf(stderr, "efieldWithCuda failed: %s\n", cudaGetErrorString(cudaStatus));
 				return EXIT_FAILURE;
-			}
-			//bool const copyToHost = n % save_data_step == 0;
-			//parallelFunctions(h_x, h_vx, h_vy, h_vz, h_ex, h_ey, h_ez, h_by, h_bz, h_jxe, h_jye, h_jze, h_jxi, h_jyi, h_jzi, ex0, ey0, ez0, bx0, by0, bz0, qme, qmi, qse, qsi, c, m, np, copyToHost);
+			} */
+			bool const copyToHost = n % save_data_step == 0;
+			parallelFunctions(h_x, h_vx, h_vy, h_vz, h_ex, h_ey, h_ez, h_by, h_bz, h_jxe, h_jye, h_jze, h_jxi, h_jyi, h_jzi, ex0, ey0, ez0, bx0, by0, bz0, qme, qmi, qse, qsi, c, m, np, copyToHost);
 		} else {
 			// half-advance of the magnetic field
 			bfield(by, bz, ey, ez, m, c);

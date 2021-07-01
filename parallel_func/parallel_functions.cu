@@ -135,7 +135,6 @@ __global__ void efieldStripeKernel(
 			ez[i] = ez[i] - (jze[i] + jzi[i]) + c * (by[i + 1] - by[i]);
 		}
 
-
 		if (i == m - 1) {
 			ex[i] = ex[4];
 			ey[i] = ey[4];
@@ -174,10 +173,11 @@ __global__ void moverStripeKernel(double* x, double* vx, double* vy, double* vz,
 	double ex_p, ey_p, ez_p, by_p, bz_p, qm, gamma_p, eps_x, eps_y, eps_z, beta_x, beta_y, beta_z, ux1, uy1, uz1, wx, wy, wz, \
 		ux2, uy2, uz2, ux, uy, uz;
 
+	const unsigned long NUMBER_OF_PARTICLES = 2 * np;
 	int index = blockIdx.x * blockDim.x + threadIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int k = index; k < m; k += stride) {
+	for (int k = index; k < NUMBER_OF_PARTICLES; k += stride) {
 		// particle 'index' is located between i and i+1 and between j+1/2 and j+3/2
 		int i = x[k];
 		int j = x[k] - 0.5;
@@ -326,8 +326,6 @@ __global__ void currentStripeKernel(double* jxe, double* jye, double* jze, doubl
 	int stride = blockDim.x * gridDim.x;
 
 	for (int k = index; k < m; k += stride) {
-
-
 		int i, j;
 		double xp1, xp2, xp;
 
@@ -422,7 +420,8 @@ void parallelFunctions(double* h_x, double* h_vx, double* h_vy, double* h_vz, do
 	const unsigned long ARRAY_BYTES_CELLS = m * sizeof(double);
 	const unsigned long ARRAY_BYTES_PARTICLES = NUMBER_OF_PARTICLES * sizeof(double);
 
-	bfieldStripeKernel<<<nrBlocksCells, BLOCK_SIZE>>>(d_by, d_bz, d_ey, d_ez, m, c);
+	
+	bfieldStripeKernel << <nrBlocksCells, BLOCK_SIZE >> > (d_by, d_bz, d_ey, d_ez, m, c);
 	cudaDeviceSynchronize();
 	moverStripeKernel<<<nrBlocksParticles, BLOCK_SIZE>>>(d_x, d_vx, d_vy, d_vz, d_ex, d_ey, d_ez, d_by, d_bz, ex0, ey0, ez0, bx0, by0, bz0, qme, qmi, c, np, m);
 	cudaDeviceSynchronize();
@@ -435,7 +434,7 @@ void parallelFunctions(double* h_x, double* h_vx, double* h_vy, double* h_vz, do
 	currentSmoothingStripeKernel<<<nrBlocksCells, BLOCK_SIZE>>>(d_jxe, d_jye, d_jze, d_jxi, d_jyi, d_jzi, d_jxe_s, d_jye_s, d_jze_s, d_jxi_s, d_jyi_s, d_jzi_s, m);
 	cudaDeviceSynchronize();
 	efieldStripeKernel<<<nrBlocksCells, BLOCK_SIZE>>>(d_ex, d_ey, d_ez, d_by, d_bz, d_jxe, d_jye, d_jze, d_jxi, d_jyi, d_jzi, m, c);
-	cudaDeviceSynchronize();
+	cudaDeviceSynchronize(); 
 
 	if (copyToHost) {
 		// copy to host

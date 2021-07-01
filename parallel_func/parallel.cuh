@@ -16,21 +16,19 @@ __device__ inline double atomicAdd(double* address, double val)
 #endif
 
 // kernels
-/*
-__global__ void bfieldKernel(double* by, double* bz, double* ey, double* ez, int m, double c);
-__global__ void efieldKernel(
+__global__ inline void bfieldKernel(double* by, double* bz, double* ey, double* ez, int m, double c);
+__global__ inline void efieldKernel(
 	double* ex, double* ey, double* ez,
 	double* by, double* bz,
 	double* jxe, double* jye, double* jze,
 	double* jxi, double* jyi, double* jzi,
 	int m, double c);
-__global__ void moverKernel(double* x, double* vx, double* vy, double* vz, double* ex, double* ey, double* ez, double* by, double* bz, \
+__global__ inline void moverKernel(double* x, double* vx, double* vy, double* vz, double* ex, double* ey, double* ez, double* by, double* bz, \
     double ex0, double ey0, double ez0, double bx0, double by0, double bz0, double qme, double qmi, double c, int np, int m);
-__global__ void currentInitializationKernel(double* jxe, double* jye, double* jze, double* jxi, double* jyi, double* jzi, double* jxe_s, double* jye_s, double* jze_s, double* jxi_s, double* jyi_s, double* jzi_s, int m);
-__global__ void currentSmoothingKernel(double* jxe, double* jye, double* jze, double* jxi, double* jyi, double* jzi, double* jxe_s, double* jye_s, double* jze_s, double* jxi_s, double* jyi_s, double* jzi_s, int m);
-__global__ void currentKernel(double* jxe, double* jye, double* jze, double* jxi, double* jyi, double* jzi, double* jxe_s, double* jye_s, double* jze_s, \
+__global__ inline void currentInitializationKernel(double* jxe, double* jye, double* jze, double* jxi, double* jyi, double* jzi, double* jxe_s, double* jye_s, double* jze_s, double* jxi_s, double* jyi_s, double* jzi_s, int m);
+__global__ inline void currentSmoothingKernel(double* jxe, double* jye, double* jze, double* jxi, double* jyi, double* jzi, double* jxe_s, double* jye_s, double* jze_s, double* jxi_s, double* jyi_s, double* jzi_s, int m);
+__global__ inline void currentKernel(double* jxe, double* jye, double* jze, double* jxi, double* jyi, double* jzi, double* jxe_s, double* jye_s, double* jze_s, \
     double* jxi_s, double* jyi_s, double* jzi_s, double* x, double* vx, double* vy, double* vz, double qse, double qsi, int np, int m);
-*/
 
 // parallel functions
 cudaError_t bfieldWithCuda(double* h_by, double* h_bz, double* h_ey, double* h_ez, int m, double c);
